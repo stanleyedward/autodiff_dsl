@@ -46,4 +46,3 @@ build/
 __pycache__/
 _asdl/
 _code/
-show_ir.py
