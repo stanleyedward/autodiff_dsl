@@ -38,3 +38,41 @@ def thread_id_vars(func):
     finder = ThreadIdFinder()
     finder.visit_function(func)
     return finder.declared_tid - finder.assigned
+
+# which arrays only ever use arr[i]
+class BadUseFinder(irvisitor.IRVisitor):
+    def __init__(self, tids):
+        self.tids = tids
+        self.bad = set()
+
+    def is_tid(self, node):
+        if isinstance(node, loma_ir.Var):
+            return node.id in self.tids
+        if isinstance(node, loma_ir.Call):
+            return node.id == "thread_id"
+        return False
+
+    def visit_array_access(self, node):
+        if isinstance(node.array, loma_ir.Var):  # a[i]
+            if not self.is_tid(node.index):
+                self.bad.add(node.array.id)
+            self.visit_expr(node.index)
+
+        else:  # s.z[i]
+            self.visit_expr(node.array)
+            self.visit_expr(node.index)
+
+    def visit_var(self, node):
+        self.bad.add(node.id)
+
+    def visit_assign(self, node):  # stmt
+        self.visit_expr(node.target)
+        self.visit_expr(node.val)
+
+
+def exclusive_arrays(func):
+    tids = thread_id_vars(func)
+    finder = BadUseFinder(tids)
+    finder.visit_function(func)
+    arrays = {a.id for a in func.args if isinstance(a.t, loma_ir.Array)}
+    return arrays - finder.bad
