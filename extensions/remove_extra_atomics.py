@@ -95,7 +95,6 @@ class AtomicRemover(irmutator.IRMutator):
         )
         return [assign_stmt]
 
-
 def remove_atomics(func):
     if not func.is_simd:
         return func
