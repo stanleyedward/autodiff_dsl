@@ -76,3 +76,31 @@ def exclusive_arrays(func):
     finder.visit_function(func)
     arrays = {a.id for a in func.args if isinstance(a.t, loma_ir.Array)}
     return arrays - finder.bad
+
+class AtomicRemover(irmutator.IRMutator):
+    def __init__(self, exclusive):
+        self.exclusive = exclusive
+
+    def mutate_call_stmt(self, node):
+        call_node = node.call
+        if call_node.id != "atomic_add":
+            return node
+        target, value = call_node.args
+        if base_var(target).id not in self.exclusive:
+            return node
+        assign_stmt = loma_ir.Assign(
+            target,
+            loma_ir.BinaryOp(loma_ir.Add(), target, value, t=target.t),
+            lineno=node.lineno,
+        )
+        return [assign_stmt]
+
+
+def remove_atomics(func):
+    if not func.is_simd:
+        return func
+    excl = exclusive_arrays(func)
+    if not excl:
+        return func
+    atomic_remover = AtomicRemover(excl)
+    return atomic_remover.mutate_function_def(func)
