@@ -12,6 +12,8 @@ import slangpy
 import unittest
 import numpy as np
 import random
+from extensions import pipeline
+pipeline.enable()
 
 epsilon = 1e-4
 
@@ -65,7 +67,7 @@ class Homework3Test(unittest.TestCase):
             structs, lib = compiler.compile(f.read(),
                                             target = 'c',
                                             output_filename = '_code/ifelse_side_effects_rev')
-        
+
         x = 1.23
         _dx = ctypes.c_float(0)
         y = 1.0
@@ -89,7 +91,7 @@ class Homework3Test(unittest.TestCase):
             structs, lib = compiler.compile(f.read(),
                                             target = 'c',
                                             output_filename = '_code/nested_ifelse_rev')
-        
+
         # test all three branches
         x = 1.23
         _dx = ctypes.c_float(0)
@@ -139,7 +141,7 @@ class Homework3Test(unittest.TestCase):
         out = lib.fwd_chained_calls(x)
 
         # out = sin(2 * x * x)
-        # dout = dx * cos(2 * x * x) * 4 * x 
+        # dout = dx * cos(2 * x * x) * 4 * x
         assert abs(out.dval - (x.dval * math.cos(2 * x.val * x.val) * 4 * x.val)) < epsilon
 
     def test_call_stmt_fwd(self):
@@ -303,7 +305,7 @@ class Homework3Test(unittest.TestCase):
         out = lib.rev_chained_calls(x, ctypes.byref(_dx), dout)
 
         # out = sin(2 * x * x)
-        # dx = dout * cos(2 * x * x) * 4 * x 
+        # dx = dout * cos(2 * x * x) * 4 * x
         assert abs(_dx.value - (dout * math.cos(2 * x * x) * 4 * x)) < epsilon
 
     def test_while_loop_fwd(self):
@@ -416,7 +418,7 @@ class Homework3Test(unittest.TestCase):
 
         layout = kernels['rev_parallel_copy'].program.layout
         f = layout.find_function_by_name('rev_parallel_copy')
-        
+
         n = 10000
         x = 0.123
         buffer_dx = slangpy.Tensor.empty(
