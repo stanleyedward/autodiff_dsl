@@ -2,6 +2,11 @@ import ir
 ir.generate_asdl_file()
 import _asdl.loma as loma_ir
 import irvisitor
+from extensions.remove_extra_atomics import base_var
+
+def make_policy(func):
+    needed = needed_values(func)
+    return lambda target: base_var(target).id in needed
 
 class VarCollector(irvisitor.IRVisitor):
     def __init__(self):
