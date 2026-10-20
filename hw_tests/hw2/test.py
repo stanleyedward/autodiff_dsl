@@ -10,8 +10,10 @@ import math
 import slang_utils
 import slangpy
 import unittest
+from extensions import pipeline
 
 epsilon = 1e-4
+pipeline.enable()
 
 class Homework2Test(unittest.TestCase):
     def setUp(self):
