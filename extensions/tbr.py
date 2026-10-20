@@ -15,3 +15,51 @@ def vars_in(expr):
     return collector.names
 
 LINEAR_CALLS = {'int2float', 'float2int', 'thread_id', 'atomic_add'}
+
+class NeededCollector(irvisitor.IRVisitor):
+    def __init__(self):
+        self.needed = set()
+
+    def visit_mul(self, node):
+        self.needed.update(vars_in(node.left))
+        self.needed.update(vars_in(node.right))
+        self.visit_expr(node.left)
+        self.visit_expr(node.right)
+
+    def visit_div(self, node):
+        self.needed.update(vars_in(node.left))
+        self.needed.update(vars_in(node.right))
+        self.visit_expr(node.left)
+        self.visit_expr(node.right)
+
+    def visit_call(self, node):
+        if node.id not in LINEAR_CALLS:
+            for arg in node.args:
+                self.needed.update(vars_in(arg))
+        for arg in node.args:
+            self.visit_expr(arg)
+
+    def visit_array_access(self, node):
+        self.needed.update(vars_in(node.index))
+        self.visit_expr(node.array)
+        self.visit_expr(node.index)
+
+    def visit_ifelse(self, node):
+        self.needed.update(vars_in(node.cond))
+        for stmt in node.then_stmts:
+            self.visit_stmt(stmt)
+        for stmt in node.else_stmts:
+            self.visit_stmt(stmt)
+
+    def visit_while(self, node):
+        for stmt in node.body:
+            self.visit_stmt(stmt)
+
+    def visit_assign(self, node):
+        self.visit_expr(node.target)
+        self.visit_expr(node.val)
+
+def needed_values(func):
+    need_collector = NeededCollector()
+    need_collector.visit_function(func)
+    return need_collector.needed
