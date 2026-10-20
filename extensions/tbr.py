@@ -23,14 +23,10 @@ class NeededCollector(irvisitor.IRVisitor):
     def visit_mul(self, node):
         self.needed.update(vars_in(node.left))
         self.needed.update(vars_in(node.right))
-        self.visit_expr(node.left)
-        self.visit_expr(node.right)
 
     def visit_div(self, node):
         self.needed.update(vars_in(node.left))
         self.needed.update(vars_in(node.right))
-        self.visit_expr(node.left)
-        self.visit_expr(node.right)
 
     def visit_call(self, node):
         if node.id not in LINEAR_CALLS:
@@ -42,7 +38,6 @@ class NeededCollector(irvisitor.IRVisitor):
     def visit_array_access(self, node):
         self.needed.update(vars_in(node.index))
         self.visit_expr(node.array)
-        self.visit_expr(node.index)
 
     def visit_ifelse(self, node):
         self.needed.update(vars_in(node.cond))
