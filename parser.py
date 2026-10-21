@@ -216,21 +216,32 @@ def visit_stmt(node) -> loma_ir.stmt:
                                   else_stmts,
                                   lineno = node.lineno)
         case ast.While():
-            # node.test needs to be a two items tuple 
-            # (condition, max_iter := ...)
+            # node.test needs to be a two items tuple
+            # (condition, max_iter := ...), (cond, max_iter, checkpointing)
             # where condition is an expression, and max_iter is an assignemt
             # of a compile-time static integer
             # TODO: error messages
-            assert isinstance(node.test, ast.Tuple) 
-            assert len(node.test.elts) == 2 
+            assert isinstance(node.test, ast.Tuple)
+            assert len(node.test.elts) in (2, 3)
             cond = visit_expr(node.test.elts[0])
+
             max_iter_assign = node.test.elts[1]
             assert isinstance(max_iter_assign, ast.NamedExpr)
             assert max_iter_assign.target.id == 'max_iter'
             assert isinstance(max_iter_assign.value, ast.Constant)
             max_iter = int(max_iter_assign.value.value)
+
+            checkpoint = None
+            if len(node.test.elts) == 3:
+                checkp = node.test.elts[2]
+                assert isinstance(checkp, ast.NamedExpr)
+                assert checkp.target.id == 'checkpoint'
+                assert isinstance(checkp.value, ast.Constant)
+                checkpoint = int(checkp.value.value)
+                assert (1<=checkpoint and checkpoint <=max_iter)
+
             body = [visit_stmt(s) for s in node.body]
-            return loma_ir.While(cond, max_iter, body, lineno = node.lineno)
+            return loma_ir.While(cond, max_iter, body, checkpoint, lineno = node.lineno)
         case ast.Expr():
             # TODO: error messages
             assert isinstance(node.value, ast.Call)
@@ -249,7 +260,7 @@ def visit_expr(node) -> loma_ir.expr:
             return loma_ir.Var(node.id, lineno = node.lineno)
         case ast.Constant():
             if type(node.value) == int:
-                return loma_ir.ConstInt(node.value, lineno = node.lineno)  
+                return loma_ir.ConstInt(node.value, lineno = node.lineno)
             elif type(node.value) == float:
                 return loma_ir.ConstFloat(node.value, lineno = node.lineno)
             else:

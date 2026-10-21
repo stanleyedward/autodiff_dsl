@@ -14,7 +14,7 @@ def flatten(nested_list : list):
 
 class IRMutator:
     """ Visitor pattern: we use IRMutator to take a loma IR code,
-        and mutate the code into something else. 
+        and mutate the code into something else.
         To use this class, you should inherit IRMutator, and define
         your own mutate functions to do the transform.
         By default the class does nothing to the IR code.
@@ -106,6 +106,7 @@ class IRMutator:
             new_cond,
             node.max_iter,
             new_body,
+            node.checkpoint,
             lineno = node.lineno)
 
     def mutate_call_stmt(self, node):
