@@ -1,4 +1,4 @@
-""" We use the very cool library asdl_gen to convert a 
+""" We use the very cool library asdl_gen to convert a
     string ASDL definition to a hierarchy of classes.
 """
 
@@ -20,7 +20,7 @@ def generate_asdl_file():
            | Declare    ( string target, type t, expr? val )
            | Return     ( expr val )
            | IfElse     ( expr cond, stmt* then_stmts, stmt* else_stmts )
-           | While      ( expr cond, int max_iter, stmt* body )
+           | While      ( expr cond, int max_iter, stmt* body, int? checkpoint )
            | CallStmt   ( expr call )
            attributes   ( int? lineno )
 
