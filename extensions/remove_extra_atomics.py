@@ -1,5 +1,3 @@
-from yapf_third_party._ylib2to3.pgen2.tokenize import Funny
-
 import ir
 import irmutator
 import irvisitor
