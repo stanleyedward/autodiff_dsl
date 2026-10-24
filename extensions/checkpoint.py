@@ -23,8 +23,8 @@ def reads_of(stmt):
         case loma_ir.Assign():
             var_names = vars_in(stmt.val)
             if not isinstance(stmt.target, loma_ir.Var):
-                var_names |= vars_in(stmt.target)
-            return vars
+                var_names.update(vars_in(stmt.target))
+            return var_names
         case _:#remaining
             return vars_in_stmt(stmt)
 
@@ -51,5 +51,15 @@ def writes_of(stmt):
         case _:
             return set()
 
+def definite_writes(stmt):
+    if isinstance(stmt, loma_ir.Assign) and isinstance(stmt.target, loma_ir.Var):
+            return {stmt.target.id}
+    return set()
+
 def carried_vars(loop):
-    pass
+    defined, read_first, written = set(), set(), set()
+    for s in loop.body:
+        read_first.update(reads_of(s)- defined)
+        written.update(writes_of(s))
+        defined.update(definite_writes(s))
+    return written & (read_first | vars_in(loop.cond))
