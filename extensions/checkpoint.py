@@ -118,6 +118,20 @@ def mentioned_outside(func, loop):
     walk(func.body)
     return names
 
+def var_types_of(func):
+    types = {a.id: a.t for a in func.args}
+    def walk(stmts):
+        for s in stmts:
+            if isinstance(s, loma_ir.Declare):
+                types[s.target] = s.t
+            elif isinstance(s, loma_ir.IfElse):
+                walk(s.then_stmts)
+                walk(s.else_stmts)
+            elif isinstance(s, loma_ir.While):
+                walk(s.body)
+    walk(func.body)
+    return types
+
 def build_segment(seg_name, loop, groups, types):
     state = sorted(groups['state'])
     inputs = sorted(groups['inputs'])
@@ -149,6 +163,15 @@ def build_segment(seg_name, loop, groups, types):
 
     return loma_ir.FunctionDef(seg_name, args, body, False, None)
 
-class CheckpointMutator(irmutator.IRMutator):
+class LoopCheckpointMutator(irmutator.IRMutator):
     def __init__(self, func):
         self.func = func
+        self.types = var_types_of(func)
+
+    def mutate_while(self, node):
+        pass
+
+def checkpoint_loops(func):
+    checkpointer = LoopCheckpointMutator(func)
+    checkpointed_func = checkpointer.mutate_function_def(func)
+    return checkpointed_func
