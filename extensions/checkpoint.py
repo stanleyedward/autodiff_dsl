@@ -1,4 +1,5 @@
 import ir
+import irmutator
 
 ir.generate_asdl_file()
 import _asdl.loma as loma_ir
@@ -116,3 +117,38 @@ def mentioned_outside(func, loop):
 
     walk(func.body)
     return names
+
+def build_segment(seg_name, loop, groups, types):
+    state = sorted(groups['state'])
+    inputs = sorted(groups['inputs'])
+    temps = sorted(groups['temps'])
+    k = loop.checkpoint
+
+    for name in state: assert isinstance(types[name], (loma_ir.Int, loma_ir.Float))
+
+    args = []
+    for name in state: args.append(loma_ir.Arg(f'{name}_in', types[name], loma_ir.In()))
+    for name in inputs: args.append(loma_ir.Arg(name, types[name], loma_ir.In()))
+    for name in state: args.append(loma_ir.Arg(f'{name}_out', types[name], loma_ir.Out()))
+
+    body = []
+    for name in state: body.append(loma_ir.Declare(name, types[name], loma_ir.Var(f'{name}_in')))
+    for name in temps: body.append(loma_ir.Declare(name, types[name]))
+
+    j = loma_ir.Var('_checkpoint_j')
+    decl_j = loma_ir.Declare('_checkpoint_j', loma_ir.Int(), loma_ir.ConstInt(0))
+    body.append(decl_j)
+
+    cond = loma_ir.BinaryOp(loma_ir.And(), loop.cond, loma_ir.BinaryOp(loma_ir.Less(), j, loma_ir.ConstInt(k)))
+    increment = loma_ir.Assign(j, loma_ir.BinaryOp(loma_ir.Add(), j, loma_ir.ConstInt(1)))
+    while_stmt = loma_ir.While(cond, k, loop.body + [increment])
+    body.append(while_stmt)
+
+    for name in state:
+        body.append(loma_ir.Assign(loma_ir.Var(f'{name}_out'), loma_ir.Var(name)))
+
+    return loma_ir.FunctionDef(seg_name, args, body, False, None)
+
+class CheckpointMutator(irmutator.IRMutator):
+    def __init__(self, func):
+        self.func = func
