@@ -13,7 +13,17 @@ last_funcs = None
 use_exclusive = True
 
 def parse_with_ext(code):
-    #uh rewrite original
+    structs, funcs = _original_parse(code)
+    new_funcs = {}
+    for name, f in funcs.items():
+        if isinstance(f, loma_ir.FunctionDef):
+            rewritten, segments = checkpoint_loops(f)
+            for seg in segments:
+                new_funcs[seg.id] = seg
+            new_funcs[name] = rewritten
+        else:
+            new_funcs[name] = f
+    return structs, new_funcs
 
 def differentiate_with_ext(structs, diff_structs, funcs):
     global last_funcs
