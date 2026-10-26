@@ -167,9 +167,30 @@ class LoopCheckpointMutator(irmutator.IRMutator):
     def __init__(self, func):
         self.func = func
         self.types = var_types_of(func)
+        self.new_funcs = []
 
     def mutate_while(self, node):
-        pass
+        if node.checkpoint is None:
+            return super().mutate_while(node)
+
+        groups = classify_vars(node)
+        temps = groups['temps']
+        outside_vars = mentioned_outside(self.func, node)
+        leaked = temps & outside_vars
+
+        assert not leaked
+        assert not any(isinstance(s, loma_ir.While) and s.checkpoint is not None for s in node.body)
+
+        segment_name = f'_checkpoint_{self.func.id}_{len(self.new_funcs)}'
+        self.new_funcs.append(build_segment(segment_name, node, groups, self.types))
+
+        state = sorted(groups['state'])
+        inputs = sorted(groups['inputs'])
+
+        call_args = [ ]
+        call_stmt = loma_ir.CallStmt(loma_ir.Call(segment_name, call_args))
+        outer_loop = #notdone
+        return outer_loop
 
 def checkpoint_loops(func):
     checkpointer = LoopCheckpointMutator(func)
