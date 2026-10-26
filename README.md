@@ -9,3 +9,7 @@ See [this PDF](https://cseweb.ucsd.edu/~tzli/cse291/sp2026/homework0.pdf) for a 
 - [ ] parse out atomics?
 - [ ] make storage stack smaller
 - [ ] figure out checkpointing.
+
+
+### todo
+- [ ] fix slang not compiling, when checkpoitning is present
