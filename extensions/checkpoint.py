@@ -1,3 +1,4 @@
+import math
 import ir
 import irmutator
 
@@ -155,7 +156,7 @@ def build_segment(seg_name, loop, groups, types):
 
     cond = loma_ir.BinaryOp(loma_ir.And(), loop.cond, loma_ir.BinaryOp(loma_ir.Less(), j, loma_ir.ConstInt(k)))
     increment = loma_ir.Assign(j, loma_ir.BinaryOp(loma_ir.Add(), j, loma_ir.ConstInt(1)))
-    while_stmt = loma_ir.While(cond, k, loop.body + [increment])
+    while_stmt = loma_ir.While(cond, k, list(loop.body)+ [increment])
     body.append(while_stmt)
 
     for name in state:
@@ -186,13 +187,15 @@ class LoopCheckpointMutator(irmutator.IRMutator):
 
         state = sorted(groups['state'])
         inputs = sorted(groups['inputs'])
+        state_names = [loma_ir.Var(name) for name in state]
+        input_names = [loma_ir.Var(name) for name in inputs]
+        call_args = state_names + input_names + state_names
 
-        call_args = [ ]
         call_stmt = loma_ir.CallStmt(loma_ir.Call(segment_name, call_args))
-        outer_loop = #notdone
+        outer_loop = loma_ir.While(node.cond, math.ceil(node.max_iter / node.checkpoint), [call_stmt])
         return outer_loop
 
 def checkpoint_loops(func):
     checkpointer = LoopCheckpointMutator(func)
     checkpointed_func = checkpointer.mutate_function_def(func)
-    return checkpointed_func
+    return checkpointed_func, checkpointer.new_funcs
