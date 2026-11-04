@@ -6,7 +6,7 @@ from extensions.tbr import make_policy
 from extensions.checkpoint import checkpoint_loops
 import codegen_slang
 from extensions.backends import InoutSlangVisitor
-from extensions.privatize_calls import privatize_calls
+from extensions.privatize_calls import privatize_calls, privatize_reachable, reachable_from_simd
 
 import reverse_diff
 
@@ -32,10 +32,13 @@ def parse_with_ext(code):
 def differentiate_with_ext(structs, diff_structs, funcs):
     global last_funcs
     funcs = _origina_diff(structs, diff_structs, funcs)
+    reachable = reachable_from_simd(funcs) if use_privatize else set()
     for name, f in funcs.items():
         if isinstance(f, loma_ir.FunctionDef):
             if use_privatize:
                 f = privatize_calls(f, funcs)
+                if name in reachable:
+                    f = privatize_reachable(f, funcs)
             if use_exclusive:
                 f = remove_atomics(f)
             funcs[name] = f 
