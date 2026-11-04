@@ -6,6 +6,7 @@ from extensions.tbr import make_policy
 from extensions.checkpoint import checkpoint_loops
 import codegen_slang
 from extensions.backends import InoutSlangVisitor
+from extensions.privatize_calls import privatize_calls
 
 import reverse_diff
 
@@ -31,16 +32,20 @@ def parse_with_ext(code):
 def differentiate_with_ext(structs, diff_structs, funcs):
     global last_funcs
     funcs = _origina_diff(structs, diff_structs, funcs)
-    if use_exclusive:
-        for name, f in funcs.items():
-            if isinstance(f, loma_ir.FunctionDef):
-                funcs[name] = remove_atomics(f)
+    for name, f in funcs.items():
+        if isinstance(f, loma_ir.FunctionDef):
+            if use_privatize:
+                f = privatize_calls(f, funcs)
+            if use_exclusive:
+                f = remove_atomics(f)
+            funcs[name] = f 
     last_funcs = funcs
     return funcs
 
-def enable(exclusive=True, tbr=True, checkpoint=True, patch_slang=True):
-    global use_exclusive
+def enable(exclusive=True, tbr=True, checkpoint=True, privatize = False, patch_slang=True):
+    global use_exclusive, use_privatize
     use_exclusive = exclusive
+    use_privatize = privatize
     reverse_diff.should_push_hook = make_policy if tbr else None
     compiler.parser.parse = parse_with_ext if checkpoint else _original_parse
     autodiff.differentiate = differentiate_with_ext

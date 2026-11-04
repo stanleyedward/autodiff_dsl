@@ -2,7 +2,7 @@ import ir
 ir.generate_asdl_file()
 import _asdl.loma as loma_ir
 import irmutator
-from extensions.exclusive_arrays import base_var
+from extensions.remove_extra_atomics import base_var
 
 class PrivitzeCall(irmutator.IRMutator):
     def __init__(self, func, funcs):
@@ -40,4 +40,7 @@ def privatize_calls(func, funcs):
     new_func = privatizer.mutate_function_def(func)
     if not privatizer.decls:
         return new_func
-    return func
+    
+    stmts = privatizer.decls + list(new_func.body)
+    return loma_ir.FunctionDef(new_func.id, new_func.args, stmts,
+                               new_func.is_simd, new_func.ret_type, lineno=new_func.lineno)
