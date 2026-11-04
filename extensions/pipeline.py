@@ -42,7 +42,7 @@ def differentiate_with_ext(structs, diff_structs, funcs):
     last_funcs = funcs
     return funcs
 
-def enable(exclusive=True, tbr=True, checkpoint=True, privatize = False, patch_slang=True):
+def enable(exclusive=True, tbr=True, checkpoint=True, privatize = True, patch_slang=True):
     global use_exclusive, use_privatize
     use_exclusive = exclusive
     use_privatize = privatize

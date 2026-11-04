@@ -7,7 +7,7 @@ from extensions.remove_extra_atomics import base_var
 class PrivitzeCall(irmutator.IRMutator):
     def __init__(self, func, funcs):
         self.funcs = funcs
-        self.shared = {a.id for a in funcs.args if a.i == loma_ir.Out()}
+        self.shared = {a.id for a in func.args if a.i == loma_ir.Out()}
         self.decls = []
         
     def mutate_call_stmt(self, node):
@@ -20,12 +20,14 @@ class PrivitzeCall(irmutator.IRMutator):
         before = []
         after = []
         for arg, param in zip(call.args, callee.args):
-            is_location = isinstance(arg, (loma_ir.Var, loma_ir.ArrayAccess, loma_ir.StructAcess))
-            if (param.i == loma_ir.Out() and is_location 
-                and base_var(arg).id is self.shared 
-                and isinstance(param.t, loma_ir.Float)):
-                #figure out the statements here
-                pass
+            is_location = isinstance(arg, (loma_ir.Var, loma_ir.ArrayAccess, loma_ir.StructAccess))
+            if (param.i == loma_ir.Out() and is_location and base_var(arg).id in self.shared and isinstance(param.t, loma_ir.Float)):
+                tmp = loma_ir.Var(f'_ptmp_{len(self.decls)}', t=loma_ir.Float())
+                self.decls.append(loma_ir.Declare(tmp.id, loma_ir.Float()))
+                before.append(loma_ir.Assign(tmp, loma_ir.ConstFloat(0.0)))
+                atomic_call = loma_ir.Call("atomic_add", [arg, tmp])
+                after.append(loma_ir.CallStmt(atomic_call))
+                new_args.append(tmp)
             else:
                 new_args.append(arg)
                 
